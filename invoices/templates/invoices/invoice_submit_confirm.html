@@ -1,0 +1,35 @@
+{% extends 'invoices/base.html' %}
+
+{% block title %}Submit Invoice - ZATCA E-Invoice{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirm Submission</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to submit invoice <strong>{{ invoice.invoice_number }}</strong> to ZATCA?</p>
+                <p class="text-muted">Once submitted, the invoice cannot be edited.</p>
+                
+                <div class="alert alert-info">
+                    <strong>Invoice Summary:</strong><br>
+                    Customer: {{ invoice.customer.name }}<br>
+                    Total: SAR {{ invoice.total }}<br>
+                    Date: {{ invoice.issue_date }}
+                </div>
+            </div>
+            <div class="card-footer">
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-send"></i> Yes, Submit to ZATCA
+                    </button>
+                    <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

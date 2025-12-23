@@ -1,0 +1,106 @@
+{% extends 'invoices/base.html' %}
+
+{% block title %}Dashboard - ZATCA E-Invoice{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> Total Invoices</h5>
+                <h2>{{ total_invoices }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-file-earmark"></i> Draft</h5>
+                <h2>{{ draft_invoices }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-hourglass-split"></i> Submitted</h5>
+                <h2>{{ submitted_invoices }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> Approved</h5>
+                <h2>{{ approved_invoices }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Invoices</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_invoices %}
+                <div class="list-group list-group-flush">
+                    {% for invoice in recent_invoices %}
+                    <a href="{% url 'invoice_detail' invoice.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ invoice.invoice_number }}</h6>
+                            <small>{{ invoice.issue_date }}</small>
+                        </div>
+                        <p class="mb-1">{{ invoice.customer.name }}</p>
+                        <small>
+                            <span class="badge bg-{{ invoice.status|default:'secondary' }}">
+                                {{ invoice.get_status_display }}
+                            </span>
+                            SAR {{ invoice.total }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No invoices yet.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-primary">View All Invoices</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'invoice_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> Create New Invoice
+                    </a>
+                    <a href="{% url 'customer_create' %}" class="btn btn-secondary">
+                        <i class="bi bi-person-plus"></i> Add Customer
+                    </a>
+                    <a href="{% url 'company_create' %}" class="btn btn-secondary">
+                        <i class="bi bi-building-add"></i> Add Company
+                    </a>
+                    <a href="{% url 'invoice_list' %}?status=draft" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark"></i> View Draft Invoices
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

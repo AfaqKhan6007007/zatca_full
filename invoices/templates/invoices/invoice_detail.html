@@ -1,0 +1,256 @@
+{% extends 'invoices/base.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - ZATCA E-Invoice{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-file-earmark-text"></i> Invoice {{ invoice.invoice_number }}</h1>
+    </div>
+    <div class="col-auto">
+        <div class="btn-group">
+            {% if invoice.status == 'draft' %}
+            <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            <a href="{% url 'invoice_submit_zatca' invoice.pk %}" class="btn btn-success">
+                <i class="bi bi-send"></i> Submit to ZATCA
+            </a>
+            {% endif %}
+            
+            {% if invoice.status in 'submitted,approved' %}
+            <a href="{% url 'invoice_check_status' invoice.pk %}" class="btn btn-info">
+                <i class="bi bi-arrow-repeat"></i> Check Status
+            </a>
+            <a href="{% url 'invoice_cancel' invoice.pk %}" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+            {% endif %}
+            
+            <a href="{% url 'invoice_print' invoice.pk %}" class="btn btn-secondary" target="_blank">
+                <i class="bi bi-printer"></i> Print
+            </a>
+            <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Invoice Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Invoice Information</h6>
+                        <p>
+                            <strong>Number:</strong> {{ invoice.invoice_number }}<br>
+                            <strong>Type:</strong> {{ invoice.get_invoice_type_display }}<br>
+                            <strong>Date:</strong> {{ invoice.issue_date }}<br>
+                            <strong>Time:</strong> {{ invoice.issue_time }}<br>
+                            <strong>Status:</strong> 
+                            {% if invoice.status == 'draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif invoice.status == 'submitted' %}
+                                <span class="badge bg-warning">Submitted</span>
+                            {% elif invoice.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% elif invoice.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% elif invoice.status == 'cancelled' %}
+                                <span class="badge bg-dark">Cancelled</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>ZATCA Information</h6>
+                        <p>
+                            <strong>UUID:</strong> {{ invoice.uuid|default:"Not submitted" }}<br>
+                            {% if invoice.qr_code %}
+                            <strong>QR Code:</strong> Available<br>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Company (Seller)</h6>
+                        <p>
+                            <strong>{{ invoice.company.name }}</strong><br>
+                            VAT: {{ invoice.company.vat_number }}<br>
+                            CR: {{ invoice.company.cr_number }}<br>
+                            {{ invoice.company.building_number }} {{ invoice.company.street_name }}<br>
+                            {{ invoice.company.district }}, {{ invoice.company.city }}<br>
+                            {{ invoice.company.postal_code }}, {{ invoice.company.country }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Customer (Buyer)</h6>
+                        <p>
+                            <strong>{{ invoice.customer.name }}</strong><br>
+                            {% if invoice.customer.vat_number %}VAT: {{ invoice.customer.vat_number }}<br>{% endif %}
+                            {% if invoice.customer.building_number and invoice.customer.street_name %}
+                            {{ invoice.customer.building_number }} {{ invoice.customer.street_name }}<br>
+                            {% endif %}
+                            {% if invoice.customer.district %}{{ invoice.customer.district }}, {% endif %}{{ invoice.customer.city }}<br>
+                            {% if invoice.customer.postal_code %}{{ invoice.customer.postal_code }}, {% endif %}{{ invoice.customer.country }}<br>
+                            {% if invoice.customer.email %}Email: {{ invoice.customer.email }}<br>{% endif %}
+                            {% if invoice.customer.phone %}Phone: {{ invoice.customer.phone }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Invoice Items</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">VAT %</th>
+                                <th class="text-end">Discount</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-end">VAT Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice.items.all %}
+                            <tr>
+                                <td>{{ item.description }}</td>
+                                <td class="text-end">{{ item.quantity }}</td>
+                                <td class="text-end">{{ item.unit_price }}</td>
+                                <td class="text-end">{{ item.vat_rate }}%</td>
+                                <td class="text-end">{{ item.discount }}</td>
+                                <td class="text-end">{{ item.total }}</td>
+                                <td class="text-end">{{ item.vat_amount }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="5" class="text-end">Subtotal:</th>
+                                <th class="text-end">SAR {{ invoice.subtotal }}</th>
+                                <th></th>
+                            </tr>
+                            <tr>
+                                <th colspan="5" class="text-end">VAT:</th>
+                                <th class="text-end">SAR {{ invoice.vat_amount }}</th>
+                                <th></th>
+                            </tr>
+                            {% if invoice.discount > 0 %}
+                            <tr>
+                                <th colspan="5" class="text-end">Discount:</th>
+                                <th class="text-end">SAR -{{ invoice.discount }}</th>
+                                <th></th>
+                            </tr>
+                            {% endif %}
+                            <tr class="table-primary">
+                                <th colspan="5" class="text-end">Total:</th>
+                                <th class="text-end">SAR {{ invoice.total }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                {% if invoice.notes %}
+                <hr>
+                <h6>Notes</h6>
+                <p>{{ invoice.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if logs %}
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">ZATCA Activity Log</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Status</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ log.action }}</td>
+                                <td>
+                                    {% if log.success %}
+                                        <span class="badge bg-success">Success</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.error_message %}
+                                        {{ log.error_message }}
+                                    {% else %}
+                                        Code: {{ log.status_code }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        {% if invoice.qr_code %}
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">QR Code</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ invoice.qr_code }}" 
+                     alt="Invoice QR Code" class="img-fluid">
+                <p class="text-muted mt-2 small">Scan for invoice verification</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Metadata</h5>
+            </div>
+            <div class="card-body">
+                <p class="small mb-1">
+                    <strong>Created:</strong><br>
+                    {{ invoice.created_at|date:"Y-m-d H:i:s" }}
+                </p>
+                <p class="small mb-1">
+                    <strong>Updated:</strong><br>
+                    {{ invoice.updated_at|date:"Y-m-d H:i:s" }}
+                </p>
+                {% if invoice.created_by %}
+                <p class="small mb-0">
+                    <strong>Created By:</strong><br>
+                    {{ invoice.created_by.username }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

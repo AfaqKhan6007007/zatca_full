@@ -1,0 +1,100 @@
+{% extends 'invoices/base.html' %}
+
+{% block title %}Invoices - ZATCA E-Invoice{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-file-earmark-text"></i> Invoices</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'invoice_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create Invoice
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="btn-group" role="group">
+            <a href="{% url 'invoice_list' %}" class="btn btn-sm {% if not request.GET.status %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                All
+            </a>
+            <a href="{% url 'invoice_list' %}?status=draft" class="btn btn-sm {% if request.GET.status == 'draft' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Draft
+            </a>
+            <a href="{% url 'invoice_list' %}?status=submitted" class="btn btn-sm {% if request.GET.status == 'submitted' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Submitted
+            </a>
+            <a href="{% url 'invoice_list' %}?status=approved" class="btn btn-sm {% if request.GET.status == 'approved' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Approved
+            </a>
+            <a href="{% url 'invoice_list' %}?status=rejected" class="btn btn-sm {% if request.GET.status == 'rejected' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Rejected
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if invoices %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Type</th>
+                        <th>Customer</th>
+                        <th>Issue Date</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a>
+                        </td>
+                        <td>{{ invoice.get_invoice_type_display }}</td>
+                        <td>{{ invoice.customer.name }}</td>
+                        <td>{{ invoice.issue_date }}</td>
+                        <td>SAR {{ invoice.total }}</td>
+                        <td>
+                            {% if invoice.status == 'draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif invoice.status == 'submitted' %}
+                                <span class="badge bg-warning">Submitted</span>
+                            {% elif invoice.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% elif invoice.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% elif invoice.status == 'cancelled' %}
+                                <span class="badge bg-dark">Cancelled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-info" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if invoice.status == 'draft' %}
+                                <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'invoice_print' invoice.pk %}" class="btn btn-secondary" target="_blank" title="Print">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">No invoices found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

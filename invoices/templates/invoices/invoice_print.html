@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .party-info {
+            width: 48%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .totals {
+            margin-left: auto;
+            width: 300px;
+        }
+        .qr-code {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()" style="margin-bottom: 20px; padding: 10px 20px;">Print Invoice</button>
+        <button onclick="window.close()" style="margin-bottom: 20px; padding: 10px 20px;">Close</button>
+    </div>
+
+    <div class="invoice-header">
+        <h1>TAX INVOICE / فاتورة ضريبية</h1>
+        <h2>{{ invoice.get_invoice_type_display }}</h2>
+        <p><strong>Invoice Number:</strong> {{ invoice.invoice_number }}</p>
+        <p><strong>Date:</strong> {{ invoice.issue_date }} | <strong>Time:</strong> {{ invoice.issue_time }}</p>
+    </div>
+
+    <div class="invoice-details">
+        <div class="party-info">
+            <h3>Seller / البائع</h3>
+            <p>
+                <strong>{{ invoice.company.name }}</strong><br>
+                VAT Number: {{ invoice.company.vat_number }}<br>
+                CR Number: {{ invoice.company.cr_number }}<br>
+                {{ invoice.company.building_number }} {{ invoice.company.street_name }}<br>
+                {{ invoice.company.district }}, {{ invoice.company.city }}<br>
+                {{ invoice.company.postal_code }}, {{ invoice.company.country }}
+            </p>
+        </div>
+        
+        <div class="party-info">
+            <h3>Buyer / المشتري</h3>
+            <p>
+                <strong>{{ invoice.customer.name }}</strong><br>
+                {% if invoice.customer.vat_number %}VAT Number: {{ invoice.customer.vat_number }}<br>{% endif %}
+                {% if invoice.customer.building_number and invoice.customer.street_name %}
+                {{ invoice.customer.building_number }} {{ invoice.customer.street_name }}<br>
+                {% endif %}
+                {% if invoice.customer.district %}{{ invoice.customer.district }}, {% endif %}{{ invoice.customer.city }}<br>
+                {% if invoice.customer.postal_code %}{{ invoice.customer.postal_code }}, {% endif %}{{ invoice.customer.country }}<br>
+                {% if invoice.customer.email %}Email: {{ invoice.customer.email }}<br>{% endif %}
+                {% if invoice.customer.phone %}Phone: {{ invoice.customer.phone }}{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <h3>Invoice Items / بنود الفاتورة</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Description / الوصف</th>
+                <th class="text-right">Qty / الكمية</th>
+                <th class="text-right">Unit Price / سعر الوحدة</th>
+                <th class="text-right">Discount / الخصم</th>
+                <th class="text-right">Subtotal / المجموع</th>
+                <th class="text-right">VAT % / ضريبة</th>
+                <th class="text-right">VAT Amount / قيمة الضريبة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.description }}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">{{ item.unit_price }}</td>
+                <td class="text-right">{{ item.discount }}</td>
+                <td class="text-right">{{ item.total }}</td>
+                <td class="text-right">{{ item.vat_rate }}%</td>
+                <td class="text-right">{{ item.vat_amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <th>Subtotal / المجموع الفرعي</th>
+            <td class="text-right">SAR {{ invoice.subtotal }}</td>
+        </tr>
+        <tr>
+            <th>Total VAT / مجموع الضريبة</th>
+            <td class="text-right">SAR {{ invoice.vat_amount }}</td>
+        </tr>
+        {% if invoice.discount > 0 %}
+        <tr>
+            <th>Discount / الخصم</th>
+            <td class="text-right">SAR -{{ invoice.discount }}</td>
+        </tr>
+        {% endif %}
+        <tr style="background-color: #f2f2f2; font-size: 1.2em;">
+            <th>Total Amount / المبلغ الإجمالي</th>
+            <td class="text-right"><strong>SAR {{ invoice.total }}</strong></td>
+        </tr>
+    </table>
+
+    {% if invoice.notes %}
+    <div style="margin-top: 20px;">
+        <strong>Notes / ملاحظات:</strong>
+        <p>{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+
+    {% if invoice.qr_code %}
+    <div class="qr-code">
+        <h3>QR Code for Verification / رمز الاستجابة السريعة للتحقق</h3>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ invoice.qr_code }}" 
+             alt="Invoice QR Code">
+        <p>Scan to verify invoice authenticity</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>This is a computer-generated invoice and does not require a signature.</p>
+        <p>هذه فاتورة من إنشاء الحاسوب ولا تتطلب توقيعًا</p>
+        {% if invoice.uuid %}
+        <p><small>ZATCA UUID: {{ invoice.uuid }}</small></p>
+        {% endif %}
+    </div>
+</body>
+</html>
