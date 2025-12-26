@@ -55,15 +55,15 @@ zatca_full/
 
 ### 1. Prerequisites
 - Python 3.8+ installed
-- Virtual environment activated (already done in your case)
-- Django installed (already done in your case)
+- Virtual environment activated 
+- Django installed
 
 ### 2. Install Dependencies
 ```bash
-pip install requests
+pip install -r requirements.txt
 ```
 
-### 3. Database Setup (Already Done)
+### 3. Database Setup
 ```bash
 python manage.py makemigrations
 python manage.py migrate
